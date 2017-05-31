@@ -203,7 +203,7 @@ public class PieCharView extends View {
             Paint.FontMetrics fontMetrics = txtPaint.getFontMetrics();
             canvas.save();
             canvas.translate(pieInRectF.centerX(), pieInRectF.centerY());
-            canvas.drawText(riskType, 0, (fontMetrics.descent - fontMetrics.ascent - 20) / 2, txtPaint);//-20为调整偏移量，由于ascent距离文字顶部有距离，会造成中心点偏差
+            canvas.drawText(riskType, 0, (fontMetrics.bottom - fontMetrics.top) / 2 - fontMetrics.bottom, txtPaint);//-20为调整偏移量，由于ascent距离文字顶部有距离，会造成中心点偏差
             canvas.restore();
         }
     }
@@ -218,24 +218,24 @@ public class PieCharView extends View {
 
             txtPaint.setTextAlign(Paint.Align.LEFT);
             txtPaint.setTextSize(mBreakdownTxtSize);
-            Paint.FontMetrics fontMetrics = txtPaint.getFontMetrics();
-            float txtHeight = fontMetrics.descent - fontMetrics.ascent;
+            Paint.FontMetrics fm = txtPaint.getFontMetrics();
+            float txtHeight = fm.bottom - fm.top;
             int margin = BREAKDOWN_MARGIN;
-
             Pie pie;
             for (int i = 0; i < mList.size(); i++) {
                 pie = mList.get(i);
                 canvas.save();
                 float translateX = getPaddingLeft() + 3f / 4 * mWidth;//宽度3/4的位置
                 float translateY = getPaddingTop() + mHeight / 2 - txtHeight * mList.size() / 2 + i * (txtHeight + margin);
+                int txtY = (int) (mRectWidth / 2 + (fm.bottom - fm.top) / 2 - fm.bottom);
                 canvas.translate(translateX, translateY);
                 piePaint.setColor(pie.getColor());
                 //绘制类目方块
                 canvas.drawRect(0, 0, mRectWidth, mRectWidth, piePaint);
                 //绘制类目名称
-                canvas.drawText(pie.getName(), mRectWidth, txtHeight - 20, txtPaint);//-20为文字高度偏移量
+                canvas.drawText(pie.getName(), mRectWidth + margin, txtY, txtPaint);
                 //绘制类目百分比
-                canvas.drawText(pie.getPer() + "%", mRectWidth + txtPaint.measureText(pie.getName()), txtHeight - 20, piePaint);
+                canvas.drawText(pie.getPer() + "%", mRectWidth + txtPaint.measureText(pie.getName()) + margin, txtY, piePaint);
                 canvas.restore();
             }
 
