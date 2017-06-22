@@ -1,6 +1,7 @@
 package lhc.piecharview.view;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -14,6 +15,7 @@ import android.view.View;
 import java.util.ArrayList;
 import java.util.List;
 
+import lhc.piecharview.R;
 import lhc.piecharview.bean.Pie;
 
 /**
@@ -21,14 +23,39 @@ import lhc.piecharview.bean.Pie;
  * 描述：饼图控件
  */
 public class PieCharView extends View {
-    private final static int BREAKDOWN_MARGIN = 15;
     private final static float TOUCH_OFF_SET = 1.1f;
+    private final static int BREAKDOWN_MARGIN = 15;
+    private final static float DEFAULT_RADIUS = 55;
+    private final static float DEFAULT_ROUND_WIDTH = 20;
+    private final static float DEFAULT_RECT_WIDTH = 8;
+    private final static float DEFAULT_RISK_TXT_SIZE = 70;
+    private final static float DEFAULT_BREAK_DOWN_SIZE = 30;
     private int mWidth;
     private int mHeight;
-    private int mRoundWidth = 60;//圆环宽度
-    private int mRiskTypeTxtSize = 70;//风险类型字体大小
-    private int mBreakdownTxtSize = 45;//类目明细文字大小
-    private int mRectWidth = 30;//类目明细方块宽度
+    /**
+     * 圆环宽度
+     */
+    private float mRoundWidth;
+    /**
+     * 风险类型的字体大小
+     */
+    private float mRiskTxtSize;
+    /**
+     * 类目明细文字大小
+     */
+    private float mBreakdownTxtSize;
+    /**
+     * 类目明细方块宽度
+     */
+    private float mRectWidth;
+    /**
+     * 圆环半径
+     */
+    private float mStillRadius;
+    /**
+     * 点击时的圆环半径
+     */
+    private float mTouchRadius;
     private Paint piePaint, txtPaint;
     private RectF pieInRectF, pieOutRectF, pieInTouchRectF, pieOutTouchRectF;
     private List<Pie> mList;
@@ -48,7 +75,21 @@ public class PieCharView extends View {
 
     public PieCharView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        initAttrs(context, attrs);
         init();
+    }
+
+    private void initAttrs(Context context, AttributeSet attrs) {
+        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.PieCharView);
+        if (typedArray != null) {
+            mRoundWidth = typedArray.getDimension(R.styleable.PieCharView_roundWidth, DEFAULT_ROUND_WIDTH);
+            mStillRadius = typedArray.getDimension(R.styleable.PieCharView_roundStillRadius, DEFAULT_RADIUS);
+            mTouchRadius = typedArray.getDimension(R.styleable.PieCharView_roundTouchRadius, DEFAULT_RADIUS);
+            mRectWidth = typedArray.getDimension(R.styleable.PieCharView_typeRectWidth, DEFAULT_RECT_WIDTH);
+            mRiskTxtSize = typedArray.getDimension(R.styleable.PieCharView_riskTextSize, DEFAULT_RISK_TXT_SIZE);
+            mBreakdownTxtSize = typedArray.getDimension(R.styleable.PieCharView_beakDownTextSize, DEFAULT_BREAK_DOWN_SIZE);
+            typedArray.recycle();
+        }
     }
 
     private void init() {
@@ -72,26 +113,25 @@ public class PieCharView extends View {
         mWidth = w - getPaddingLeft() - getPaddingRight();
         mHeight = h - getPaddingTop() - getPaddingBottom();
 
-        int diameter = Math.min(mWidth / 2 - mRoundWidth * 2, mHeight - mRoundWidth * 2);
-        int margin = mRoundWidth;//圆环外间距为圆环宽度，防止点击滑动后滑出屏幕
+        int margin = (int) mRoundWidth;//圆环外间距为圆环宽度，防止点击滑动后滑出屏幕
 
         //设置绘制内圆的矩形
         pieInRectF.left = getPaddingLeft() + mRoundWidth + margin;
-        pieInRectF.top = getPaddingTop() + mHeight / 2 - diameter / 2;
-        pieInRectF.right = pieInRectF.left + diameter;
-        pieInRectF.bottom = pieInRectF.top + diameter;
+        pieInRectF.top = getPaddingTop() + mHeight / 2 - mRoundWidth / 2;
+        pieInRectF.right = pieInRectF.left + mRoundWidth + mStillRadius * 2;
+        pieInRectF.bottom = pieInRectF.top + mRoundWidth + mStillRadius * 2;
         //设置绘制外圆的矩形
         pieOutRectF.left = pieInRectF.left - mRoundWidth;
         pieOutRectF.top = pieInRectF.top - mRoundWidth;
         pieOutRectF.right = pieInRectF.right + mRoundWidth;
         pieOutRectF.bottom = pieInRectF.bottom + mRoundWidth;
 
-        float gap = (float) ((TOUCH_OFF_SET - 1) * (diameter / 2) / Math.sqrt(2));
+        float gap = (float) ((TOUCH_OFF_SET - 1) * (mRoundWidth / 2) / Math.sqrt(2));
         //设置绘制点击后内圆的矩形
         pieInTouchRectF.left = getPaddingLeft() + margin + mRoundWidth - gap;
-        pieInTouchRectF.top = getPaddingTop() + mHeight / 2 - diameter / 2 - gap;
-        pieInTouchRectF.right = pieInTouchRectF.left + gap * 2 + diameter;
-        pieInTouchRectF.bottom = pieInTouchRectF.top + gap * 2 + diameter;
+        pieInTouchRectF.top = getPaddingTop() + mHeight / 2 - mRoundWidth / 2 - gap;
+        pieInTouchRectF.right = pieInTouchRectF.left + gap * 2 + mRoundWidth;
+        pieInTouchRectF.bottom = pieInTouchRectF.top + gap * 2 + mRoundWidth;
         //设置绘制点击后圆的矩形
         pieOutTouchRectF.left = pieInTouchRectF.left - mRoundWidth;
         pieOutTouchRectF.top = pieInTouchRectF.top - mRoundWidth;
@@ -199,7 +239,7 @@ public class PieCharView extends View {
     private void drawRiskType(Canvas canvas) {
         if (riskType != null && !"".equals(riskType)) {
             txtPaint.setTextAlign(Paint.Align.CENTER);
-            txtPaint.setTextSize(mRiskTypeTxtSize);
+            txtPaint.setTextSize(mRiskTxtSize);
             Paint.FontMetrics fontMetrics = txtPaint.getFontMetrics();
             canvas.save();
             canvas.translate(pieInRectF.centerX(), pieInRectF.centerY());
